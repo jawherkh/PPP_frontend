@@ -1,5 +1,4 @@
-
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { MessageData, ChatHistoryItem, SettingsData } from '@/types';
 
 interface ChatContextType {
@@ -56,6 +55,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [settings, setSettings] = useState<SettingsData>(defaultSettings);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+    document.documentElement.style.fontSize = `${settings.fontSize}px`;
+  }, [settings.darkMode, settings.fontSize]);
 
   const addMessage = (message: Omit<MessageData, 'id' | 'timestamp'>) => {
     const newMessage: MessageData = {

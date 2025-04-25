@@ -1,5 +1,4 @@
 
-import { useCallback, useEffect } from 'react';
 import ChatSidebar from '@/components/ChatSidebar';
 import ChatInterface from '@/components/ChatInterface';
 import CircuitVisualization from '@/components/CircuitVisualization';
@@ -15,7 +14,7 @@ const MainContent = () => {
   const layout = isMobile ? 'mobile' : 'desktop';
   
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background dark:bg-background">
       <ChatSidebar />
       
       <main className={`flex-1 flex transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
