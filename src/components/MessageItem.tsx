@@ -19,14 +19,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
       isUserMessage ? "justify-end" : "justify-start"
     )}>
       <div className={cn(
-        "max-w-[80%] rounded-lg p-4",
-        isUserMessage 
-          ? "bg-electric-accent text-white rounded-tr-none"
-          : "bg-secondary text-white rounded-tl-none circuit-border"
+        "max-w-[80%]",
+        isUserMessage && "bg-blue-600 text-white rounded-lg p-4 rounded-tr-none",
+        !isUserMessage && "text-foreground" // Uses system foreground color for assistant messages
       )}>
         <div className="flex items-center gap-2 mb-1">
-          {!isUserMessage && <CircuitBoard size={16} className="text-electric-light" />}
-          <span className="text-sm opacity-70">
+          {!isUserMessage && <CircuitBoard size={16} className="text-blue-400" />}
+          <span className={cn(
+            "text-sm",
+            isUserMessage ? "opacity-70" : "text-blue-400"
+          )}>
             {isUserMessage ? "You" : "Circuit Assistant"}
           </span>
           <span className="text-xs opacity-50 ml-auto">
@@ -38,7 +40,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
         </div>
         
         {message.circuitImage && (
-          <div className="mt-3 rounded overflow-hidden border border-electric">
+          <div className="mt-3 rounded overflow-hidden border border-blue-500">
             <img 
               src={message.circuitImage} 
               alt="Circuit Diagram"
@@ -49,8 +51,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
               onLoad={() => setImageLoaded(true)}
             />
             {!imageLoaded && (
-              <div className="h-32 bg-electric-dark/50 animate-pulse flex items-center justify-center">
-                <CircuitBoard className="text-electric-light/30" />
+              <div className="h-32 bg-blue-900/50 animate-pulse flex items-center justify-center">
+                <CircuitBoard className="text-blue-400/30" />
               </div>
             )}
           </div>
@@ -59,8 +61,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
         {message.plotData && message.plotData.length > 0 && (
           <div className="mt-3 space-y-3">
             {message.plotData.map(plot => (
-              <div key={plot.id} className="rounded overflow-hidden border border-electric-cyan">
-                <div className="bg-electric-dark/70 text-xs p-1 px-2 font-mono text-electric-cyan">
+              <div key={plot.id} className="rounded overflow-hidden border border-blue-500">
+                <div className="bg-blue-900/70 text-xs p-1 px-2 font-mono text-blue-300">
                   {plot.title}
                 </div>
                 <img src={plot.imageUrl} alt={plot.title} className="w-full" />
