@@ -1,13 +1,50 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useCallback, useEffect } from 'react';
+import ChatSidebar from '@/components/ChatSidebar';
+import ChatInterface from '@/components/ChatInterface';
+import CircuitVisualization from '@/components/CircuitVisualization';
+import SettingsPanel from '@/components/SettingsPanel';
+import { ChatProvider, useChatContext } from '@/context/ChatContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+const MainContent = () => {
+  const { sidebarOpen } = useChatContext();
+  const isMobile = useIsMobile();
+  
+  // Determine the layout based on screen size
+  const layout = isMobile ? 'mobile' : 'desktop';
+  
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <ChatSidebar />
+      
+      <main className={`flex-1 flex transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+        {layout === 'desktop' ? (
+          <>
+            <div className="w-1/2 h-full">
+              <ChatInterface />
+            </div>
+            <div className="w-1/2 h-full">
+              <CircuitVisualization />
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full">
+            <ChatInterface />
+          </div>
+        )}
+      </main>
+      
+      <SettingsPanel />
+    </div>
+  );
+};
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <ChatProvider>
+      <MainContent />
+    </ChatProvider>
   );
 };
 
