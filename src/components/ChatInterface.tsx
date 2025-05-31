@@ -119,14 +119,10 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+        <div className="flex items-center justify-center text-xs text-muted-foreground mt-2">
           <div className="flex items-center gap-1">
             <Zap size={12} className="text-electric-light" />
             <span>Circuit analysis powered by AI</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <CircuitBoard size={12} />
-            <span>Interactive schematics</span>
           </div>
         </div>
       </div>

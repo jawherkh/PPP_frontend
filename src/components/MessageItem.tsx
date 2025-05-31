@@ -20,20 +20,18 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
     )}>
       <div className={cn(
         "max-w-[80%]",
-        isUserMessage && "bg-blue-600 text-white rounded-lg p-4 rounded-tr-none",
+        isUserMessage && "bg-blue-600 text-white rounded-lg p-2 rounded-tr-none",
         !isUserMessage && "text-foreground" // Uses system foreground color for assistant messages
       )}>
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2">
           {!isUserMessage && <CircuitBoard size={16} className="text-blue-400" />}
           <span className={cn(
             "text-sm",
             isUserMessage ? "opacity-70" : "text-blue-400"
           )}>
-            {isUserMessage ? "You" : "Circuit Assistant"}
+            {isUserMessage ? "" : "Circuit Assistant"}
           </span>
-          <span className="text-xs opacity-50 ml-auto">
-            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
+          
         </div>
         <div className="text-sm md:text-base whitespace-pre-wrap">
           {message.content}
