@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { MessageData, ChatHistoryItem, SettingsData } from '@/types';
+import { MessageData, ChatHistoryItem, SettingsData, PlotData } from '@/types';
 
 interface ChatContextType {
   messages: MessageData[];
@@ -7,10 +7,15 @@ interface ChatContextType {
   settings: SettingsData;
   sidebarOpen: boolean;
   settingsPanelOpen: boolean;
+  currentCircuitImage: string | null;
+  currentPlotData: PlotData[] | null;
+  currentReportData: string | null;
   addMessage: (message: Omit<MessageData, 'id' | 'timestamp'>) => void;
   toggleSidebar: () => void;
   toggleSettingsPanel: () => void;
   updateSettings: (newSettings: Partial<SettingsData>) => void;
+  updateCurrentCircuit: (circuitImage: string | null, plotData: PlotData[] | null) => void;
+  updateCurrentReport: (reportData: string | null) => void;
 }
 
 const defaultSettings: SettingsData = {
@@ -55,6 +60,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [settings, setSettings] = useState<SettingsData>(defaultSettings);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const [currentCircuitImage, setCurrentCircuitImage] = useState<string | null>(null);
+  const [currentPlotData, setCurrentPlotData] = useState<PlotData[] | null>(null);
+  const [currentReportData, setCurrentReportData] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.darkMode);
@@ -81,6 +89,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateSettings = (newSettings: Partial<SettingsData>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
+  const updateCurrentCircuit = (circuitImage: string | null, plotData: PlotData[] | null) => {
+    setCurrentCircuitImage(circuitImage);
+    setCurrentPlotData(plotData);
+  };
+
+  const updateCurrentReport = (reportData: string | null) => {
+    setCurrentReportData(reportData);
+  };
 
   return (
     <ChatContext.Provider
@@ -90,10 +106,15 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         settings,
         sidebarOpen,
         settingsPanelOpen,
+        currentCircuitImage,
+        currentPlotData,
+        currentReportData,
         addMessage,
         toggleSidebar,
         toggleSettingsPanel,
         updateSettings,
+        updateCurrentCircuit,
+        updateCurrentReport,
       }}
     >
       {children}

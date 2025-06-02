@@ -8,6 +8,7 @@ export interface MessageData {
   timestamp: Date;
   circuitImage?: string;
   plotData?: PlotData[];
+  reportData?: string; // Full analysis report content in markdown format
 }
 
 export interface PlotData {

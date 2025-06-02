@@ -1,15 +1,51 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useChatContext } from '@/context/ChatContext';
 import MessageItem from '@/components/MessageItem';
-import { ArrowUp, CircuitBoard, Zap } from 'lucide-react';
+import { ArrowUp, CircuitBoard, Zap, Loader2 } from 'lucide-react';
+import { CircuitDesignAPI, ProcessQueryResponse } from '@/services/api';
+
+// Function to extract plot data from API response
+const extractPlotDataFromResponse = (response: ProcessQueryResponse): Array<{id: string; title: string; imageUrl: string}> => {
+  const plotData: Array<{id: string; title: string; imageUrl: string}> = [];
+  
+  if (!response.files) return plotData;
+  
+  // Add circuit_plot if available (main simulation result)
+  if (response.files.circuit_plot) {
+    plotData.push({
+      id: 'circuit_plot',
+      title: 'Circuit Simulation',
+      imageUrl: response.files.circuit_plot,
+    });
+  }
+  
+  // Find all other plot files - look for keys that match patterns or contain "plot"
+  Object.entries(response.files).forEach(([key, url]) => {
+    if (key === 'circuit_plot' || key === 'schema_diagram') return; // Skip already handled keys
+    
+    if (key.includes('plot') || key.includes('figure') || key.includes('graph') || 
+        key.match(/plot_\d+/) || key.includes('simulation')) {
+      const title = key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .replace(/Plot/i, 'Plot')
+        .replace(/Figure/i, 'Figure')
+        .replace(/Graph/i, 'Graph');
+      
+      plotData.push({ id: key, title, imageUrl: url });
+    }
+  });
+  
+  return plotData;
+};
 
 const ChatInterface: React.FC = () => {
   const { messages, addMessage } = useChatContext();
   const [inputMessage, setInputMessage] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -22,58 +58,102 @@ const ChatInterface: React.FC = () => {
       }
     }
   }, [messages]);
-
   // Handle message submission
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isProcessing) return;
+
+    const userQuery = inputMessage.trim();
 
     // Add user message
     addMessage({
       type: 'user',
-      content: inputMessage,
+      content: userQuery,
     });
 
-    // Simulate bot response
-    setTimeout(() => {
-      const demoResponses = [
-        {
-          content: "I've analyzed your circuit. Here's the schematic and voltage analysis:",
-          circuitImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y2lyY3VpdHxlbnwwfHwwfHx8MA%3D%3D",
-        },
-        {
-          content: "Based on your requirements, I've calculated the following current and voltage relationships. The RC time constant is τ = RC = 1kΩ × 10μF = 10ms.",
-          plotData: [
-            {
-              id: '1',
-              title: 'Voltage vs. Time',
-              imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Oscilloscope.png/640px-Oscilloscope.png',
+    // Clear input and show loading
+    setInputMessage('');
+    setIsProcessing(true);
+
+    // Add loading message
+    addMessage({
+      type: 'bot',
+      content: 'Processing your circuit design request... This may take a moment.',
+    });
+
+    try {
+      // Call the API
+      const response = await CircuitDesignAPI.processQuery(userQuery);
+      
+      if (response.status === 'success' && response.files) {
+        // Extract circuit image and plot data from response
+        const circuitImage = response.files.schema_diagram;
+        const plotData = extractPlotDataFromResponse(response);
+        
+        // Create response message with circuit diagram and plots
+        addMessage({
+          type: 'bot',
+          content: response.message || 'Circuit analysis completed successfully!',
+          circuitImage: circuitImage,
+          plotData: plotData.length > 0 ? plotData : undefined,
+        });
+        
+        // If there's an analysis report, add its content to a separate message but only show summary in chat
+        if (response.files.analysis_report) {
+          try {
+            const analysisResponse = await fetch(response.files.analysis_report);
+            if (analysisResponse.ok) {
+              const analysisText = await analysisResponse.text();
+              
+              // Add the full report to reportData field, but only display a reference in the chat
+              addMessage({
+                type: 'bot',
+                content: "I've prepared a detailed analysis report for your circuit. You can view it in the Report tab.",
+                reportData: analysisText,
+              });
             }
-          ],
-        },
-        {
-          content: "I've simulated the amplifier circuit. The gain is approximately 24dB with the current component values.",
+          } catch (error) {
+            console.error('Error fetching analysis report:', error);
+          }
         }
-      ];
-
-      const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
-
+        
+        // If there's a summary report, add it as a separate message
+        if (response.files.summary_report) {
+          try {
+            const summaryResponse = await fetch(response.files.summary_report);
+            if (summaryResponse.ok) {
+              const summaryText = await summaryResponse.text();
+              addMessage({
+                type: 'bot',
+                content: summaryText,
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching summary report:', error);
+          }
+        }
+      } else {
+        // Handle error response
+        addMessage({
+          type: 'bot',
+          content: `Error: ${response.error || 'Unknown error occurred during circuit processing.'}`,
+        });
+      }
+    } catch (error) {
+      console.error('API Error:', error);
       addMessage({
         type: 'bot',
-        content: randomResponse.content,
-        circuitImage: randomResponse.circuitImage,
-        plotData: randomResponse.plotData,
+        content: `Error: Failed to connect to circuit design service. Please make sure the backend is running on http://localhost:8000`,
       });
-    }, 1000);
-
-    setInputMessage('');
-    if (textareaRef.current) {
-      textareaRef.current.focus();
+    } finally {
+      setIsProcessing(false);
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
     }
   };
-
   // Handle keyboard shortcut
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -94,27 +174,32 @@ const ChatInterface: React.FC = () => {
       <div className="border-t border-border bg-background p-4">
         <div className="flex items-end gap-2 relative circuit-border rounded-lg p-1 overflow-hidden">
           <div className="absolute left-0 top-0 h-1 w-full electric-gradient animate-flow"></div>
-          
-          <Textarea
+            <Textarea
             ref={textareaRef}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about circuits, components, or analysis..."
+            placeholder={isProcessing ? "Processing circuit design..." : "Ask about circuits, components, or analysis..."}
             className="flex-1 min-h-[60px] bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none"
             maxLength={1000}
+            disabled={isProcessing}
           />
           
-          <div className="flex items-center gap-2">
-            <Button
+          <div className="flex items-center gap-2">            <Button
               type="button"
               size="icon"
               className="bg-electric hover:bg-electric-accent"
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim()}
+              disabled={!inputMessage.trim() || isProcessing}
             >
-              <ArrowUp size={18} />
-              <span className="sr-only">Send message</span>
+              {isProcessing ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <ArrowUp size={18} />
+              )}
+              <span className="sr-only">
+                {isProcessing ? 'Processing...' : 'Send message'}
+              </span>
             </Button>
           </div>
         </div>
