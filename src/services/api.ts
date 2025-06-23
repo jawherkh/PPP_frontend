@@ -4,6 +4,7 @@ const API_BASE_URL = 'http://localhost:8000';
 
 export interface ProcessQueryRequest {
   query: string;
+  endpoint?: 'auto' | 'simple' | 'classify' | 'full';
 }
 
 export interface ProcessQueryResponse {
@@ -18,6 +19,18 @@ export interface ProcessQueryResponse {
   message?: string;
   error?: string;
   query?: string;
+}
+
+export interface SimpleQueryResponse {
+  response: string;
+  type: 'simple';
+  confidence?: number;
+}
+
+export interface ClassifyQueryResponse {
+  classification: 'simple' | 'complex';
+  confidence: number;
+  reasoning: string;
 }
 
 export class CircuitDesignAPI {
@@ -40,9 +53,26 @@ export class CircuitDesignAPI {
 
     return response.json();
   }
-
-  static async processQuery(query: string): Promise<ProcessQueryResponse> {
+  static async processQuery(query: string, endpoint?: 'auto' | 'simple' | 'classify' | 'full'): Promise<ProcessQueryResponse> {
+    const body: ProcessQueryRequest = { query };
+    if (endpoint) {
+      body.endpoint = endpoint;
+    }
     return this.request<ProcessQueryResponse>('/process-query', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  static async simpleQuery(query: string): Promise<SimpleQueryResponse> {
+    return this.request<SimpleQueryResponse>('/simple-query', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    });
+  }
+
+  static async classifyQuery(query: string): Promise<ClassifyQueryResponse> {
+    return this.request<ClassifyQueryResponse>('/classify-query', {
       method: 'POST',
       body: JSON.stringify({ query }),
     });

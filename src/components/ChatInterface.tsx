@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useChatContext } from '@/context/ChatContext';
 import MessageItem from '@/components/MessageItem';
-import { ArrowUp, CircuitBoard, Zap, Loader2 } from 'lucide-react';
-import { CircuitDesignAPI, ProcessQueryResponse } from '@/services/api';
+import { ArrowUp, CircuitBoard, Zap, Loader2, Settings } from 'lucide-react';
+import { CircuitDesignAPI, ProcessQueryResponse, SimpleQueryResponse, ClassifyQueryResponse } from '@/services/api';
 
 // Function to extract plot data from API response
 const extractPlotDataFromResponse = (response: ProcessQueryResponse): Array<{id: string; title: string; imageUrl: string}> => {
@@ -46,6 +47,8 @@ const ChatInterface: React.FC = () => {
   const { messages, addMessage } = useChatContext();
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [routingMode, setRoutingMode] = useState<'auto' | 'simple' | 'classify' | 'full'>('auto');
+  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -57,8 +60,7 @@ const ChatInterface: React.FC = () => {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [messages]);
-  // Handle message submission
+  }, [messages]);  // Handle message submission
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isProcessing) return;
 
@@ -74,69 +76,103 @@ const ChatInterface: React.FC = () => {
     setInputMessage('');
     setIsProcessing(true);
 
-    // Add loading message
-    addMessage({
-      type: 'bot',
-      content: 'Processing your circuit design request... This may take a moment.',
-    });
-
     try {
-      // Call the API
-      const response = await CircuitDesignAPI.processQuery(userQuery);
-      
-      if (response.status === 'success' && response.files) {
-        // Extract circuit image and plot data from response
-        const circuitImage = response.files.schema_diagram;
-        const plotData = extractPlotDataFromResponse(response);
-        
-        // Create response message with circuit diagram and plots
+      // Handle different routing modes
+      if (routingMode === 'simple') {
+        // Force simple response
+        const response = await CircuitDesignAPI.simpleQuery(userQuery);
         addMessage({
           type: 'bot',
-          content: response.message || 'Circuit analysis completed successfully!',
-          circuitImage: circuitImage,
-          plotData: plotData.length > 0 ? plotData : undefined,
+          content: response.response,
         });
-        
-        // If there's an analysis report, add its content to a separate message but only show summary in chat
-        if (response.files.analysis_report) {
-          try {
-            const analysisResponse = await fetch(response.files.analysis_report);
-            if (analysisResponse.ok) {
-              const analysisText = await analysisResponse.text();
-              
-              // Add the full report to reportData field, but only display a reference in the chat
-              addMessage({
-                type: 'bot',
-                content: "I've prepared a detailed analysis report for your circuit. You can view it in the Report tab.",
-                reportData: analysisText,
-              });
-            }
-          } catch (error) {
-            console.error('Error fetching analysis report:', error);
-          }
-        }
-        
-        // If there's a summary report, add it as a separate message
-        if (response.files.summary_report) {
-          try {
-            const summaryResponse = await fetch(response.files.summary_report);
-            if (summaryResponse.ok) {
-              const summaryText = await summaryResponse.text();
-              addMessage({
-                type: 'bot',
-                content: summaryText,
-              });
-            }
-          } catch (error) {
-            console.error('Error fetching summary report:', error);
-          }
-        }
+      } else if (routingMode === 'classify') {
+        // Get classification only
+        const response = await CircuitDesignAPI.classifyQuery(userQuery);
+        addMessage({
+          type: 'bot',
+          content: `**Query Classification:**\n\n**Type:** ${response.classification}\n**Confidence:** ${Math.round(response.confidence * 100)}%\n**Reasoning:** ${response.reasoning}`,
+        });
       } else {
-        // Handle error response
-        addMessage({
-          type: 'bot',
-          content: `Error: ${response.error || 'Unknown error occurred during circuit processing.'}`,
-        });
+        // Use process-query endpoint with routing mode (auto or full)
+        const response = await CircuitDesignAPI.processQuery(userQuery, routingMode);
+        
+        if (response.status === 'success') {
+          // Check if this was a simple response (no files)
+          if (!response.files && response.message) {
+            // Simple response - just show the message
+            addMessage({
+              type: 'bot',
+              content: response.message,
+            });
+          } else if (response.files) {
+            // Complex response with circuit analysis
+            const circuitImage = response.files.schema_diagram;
+            const plotData = extractPlotDataFromResponse(response);
+            
+            // Create response message with circuit diagram and plots
+            addMessage({
+              type: 'bot',
+              content: response.message || 'Circuit analysis completed successfully!',
+              circuitImage: circuitImage,
+              plotData: plotData.length > 0 ? plotData : undefined,
+            });
+
+            // Handle analysis report
+            if (response.files.analysis_report) {
+              try {
+                const analysisResponse = await fetch(response.files.analysis_report);
+                if (analysisResponse.ok) {
+                  const analysisText = await analysisResponse.text();
+                  
+                  if (analysisText.trim().length > 0) {
+                    addMessage({
+                      type: 'bot',
+                      content: "I've prepared a detailed analysis report for your circuit. You can view it in the Report tab.",
+                      reportData: analysisText,
+                    });
+                  }
+                } else {
+                  console.error('Failed to fetch analysis report:', analysisResponse.status);
+                }
+              } catch (error) {
+                console.error('Error fetching analysis report:', error);
+              }
+            }
+
+            // Handle summary report
+            if (response.files.summary_report) {
+              try {
+                const summaryResponse = await fetch(response.files.summary_report);
+                if (summaryResponse.ok) {
+                  const summaryText = await summaryResponse.text();
+                  
+                  if (summaryText.trim().length > 0) {
+                    addMessage({
+                      type: 'bot',
+                      content: summaryText,
+                    });
+                  }
+                } else {
+                  console.error('Failed to fetch summary report:', summaryResponse.status);
+                }
+              } catch (error) {
+                console.error('Error fetching summary report:', error);
+              }
+            }
+          } else {
+            // Fallback message
+            addMessage({
+              type: 'bot',
+              content: response.message || 'Query processed successfully!',
+            });
+          }
+        } else {
+          // Handle error response
+          addMessage({
+            type: 'bot',
+            content: `Error: ${response.error || 'Unknown error occurred during processing.'}`,
+          });
+        }
       }
     } catch (error) {
       console.error('API Error:', error);
@@ -168,10 +204,33 @@ const ChatInterface: React.FC = () => {
             <MessageItem key={message.id} message={message} />
           ))}
         </div>
-      </ScrollArea>
-
-      {/* Input Area */}
+      </ScrollArea>      {/* Input Area */}
       <div className="border-t border-border bg-background p-4">
+        {/* Advanced Controls */}
+        {showAdvancedControls && (
+          <div className="mb-4 p-3 bg-slate-900/50 border border-electric-cyan/30 rounded-lg">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-electric-light">Query Routing:</label>
+              <Select value={routingMode} onValueChange={(value: 'auto' | 'simple' | 'classify' | 'full') => setRoutingMode(value)}>
+                <SelectTrigger className="w-40 bg-slate-800 border-electric-cyan/30 text-electric-light">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-electric-cyan/30">
+                  <SelectItem value="auto" className="text-electric-light">Auto (Smart)</SelectItem>
+                  <SelectItem value="simple" className="text-electric-light">Simple Only</SelectItem>
+                  <SelectItem value="classify" className="text-electric-light">Classify Only</SelectItem>
+                  <SelectItem value="full" className="text-electric-light">Full Analysis</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-slate-400 ml-2">
+                {routingMode === 'auto' && 'AI decides between simple response or full analysis'}
+                {routingMode === 'simple' && 'Fast responses for basic queries'}
+                {routingMode === 'classify' && 'Show query classification only'}
+                {routingMode === 'full' && 'Always run full circuit analysis'}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-end gap-2 relative circuit-border rounded-lg p-1 overflow-hidden">
           <div className="absolute left-0 top-0 h-1 w-full electric-gradient animate-flow"></div>
             <Textarea
@@ -184,8 +243,19 @@ const ChatInterface: React.FC = () => {
             maxLength={1000}
             disabled={isProcessing}
           />
-          
-          <div className="flex items-center gap-2">            <Button
+            <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="hover:bg-electric-cyan/20"
+              onClick={() => setShowAdvancedControls(!showAdvancedControls)}
+              title="Advanced routing controls"
+            >
+              <Settings size={18} className={showAdvancedControls ? 'text-electric-cyan' : 'text-slate-400'} />
+            </Button>
+            
+            <Button
               type="button"
               size="icon"
               className="bg-electric hover:bg-electric-accent"
@@ -203,12 +273,16 @@ const ChatInterface: React.FC = () => {
             </Button>
           </div>
         </div>
-        
-        <div className="flex items-center justify-center text-xs text-muted-foreground mt-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
           <div className="flex items-center gap-1">
             <Zap size={12} className="text-electric-light" />
             <span>Circuit analysis powered by AI</span>
           </div>
+          {routingMode !== 'auto' && (
+            <div className="text-electric-cyan">
+              Mode: {routingMode.charAt(0).toUpperCase() + routingMode.slice(1)}
+            </div>
+          )}
         </div>
       </div>
     </div>
