@@ -58,7 +58,15 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   ]);
   
   const [settings, setSettings] = useState<SettingsData>(defaultSettings);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Initialize sidebar state based on screen size
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // Default to closed on mobile
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return true;
+  });
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [currentCircuitImage, setCurrentCircuitImage] = useState<string | null>(null);
   const [currentPlotData, setCurrentPlotData] = useState<PlotData[] | null>(null);

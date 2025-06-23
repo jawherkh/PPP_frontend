@@ -4,8 +4,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useChatContext } from '@/context/ChatContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import MessageItem from '@/components/MessageItem';
-import { ArrowUp, CircuitBoard, Zap, Loader2, Settings } from 'lucide-react';
+import { ArrowUp, CircuitBoard, Zap, Loader2, Settings, Menu } from 'lucide-react';
 import { CircuitDesignAPI, ProcessQueryResponse, SimpleQueryResponse, ClassifyQueryResponse } from '@/services/api';
 
 // Function to extract plot data from API response
@@ -44,13 +45,14 @@ const extractPlotDataFromResponse = (response: ProcessQueryResponse): Array<{id:
 };
 
 const ChatInterface: React.FC = () => {
-  const { messages, addMessage } = useChatContext();
+  const { messages, addMessage, toggleSidebar } = useChatContext();
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [routingMode, setRoutingMode] = useState<'auto' | 'simple' | 'classify' | 'full'>('auto');
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -194,9 +196,28 @@ const ChatInterface: React.FC = () => {
       handleSendMessage();
     }
   };
-
   return (
     <div className="flex flex-col h-full">
+      {/* Mobile Header */}
+      {isMobile && (
+        <div className="flex items-center justify-between p-4 border-b border-border lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="text-foreground"
+          >
+            <Menu size={20} />
+            <span className="sr-only">Open menu</span>
+          </Button>
+          <div className="flex items-center gap-2">
+            <CircuitBoard className="h-5 w-5 text-electric-light" />
+            <span className="font-medium">Circuit Assistant</span>
+          </div>
+          <div className="w-10" /> {/* Spacer for balance */}
+        </div>
+      )}
+      
       {/* Chat Messages */}
       <ScrollArea className="flex-1 p-4 overflow-auto" ref={scrollAreaRef}>
         <div className="flex flex-col space-y-4 pb-4">
