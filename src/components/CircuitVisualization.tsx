@@ -46,8 +46,8 @@ const CircuitVisualization: React.FC = () => {
         }
       }
       
-      // For report data
-      if (!latestReportData && message.reportData) {
+      // For report data - only use actual report data, not test data
+      if (!latestReportData && message.reportData && message.reportData.trim().length > 0) {
         latestReportData = message.reportData;
       }
       
@@ -66,132 +66,12 @@ const CircuitVisualization: React.FC = () => {
   
   const { circuitImage, plotData, reportData } = getLatestCircuitData();
   
-  // Temporary test data for scrolling verification
-  const testReportData = `# Circuit Analysis Report
-
-## Introduction
-This is a comprehensive analysis of the circuit design and performance characteristics.
-
-## Circuit Description
-The circuit consists of several key components that work together to achieve the desired functionality.
-
-### Component Analysis
-1. **Resistor R1**: 1kΩ resistance value
-2. **Capacitor C1**: 100µF capacitance
-3. **Inductor L1**: 10mH inductance
-
-## Mathematical Analysis
-
-The voltage across the resistor can be calculated using Ohm's law:
-
-$$V_R = I \\times R$$
-
-Where:
-- $V_R$ is the voltage across the resistor
-- $I$ is the current through the resistor  
-- $R$ is the resistance value
-
-## Frequency Response
-
-The transfer function of the circuit is given by:
-
-$$H(s) = \\frac{V_{out}(s)}{V_{in}(s)} = \\frac{1}{1 + sRC}$$
-
-## Time Domain Analysis
-
-The step response of the system can be expressed as:
-
-$$v_{out}(t) = V_{in}(1 - e^{-t/RC})u(t)$$
-
-## Performance Metrics
-
-| Parameter | Value | Unit |
-|-----------|-------|------|
-| Cutoff Frequency | 1.59 | kHz |
-| DC Gain | 0 | dB |
-| Phase Margin | 90 | degrees |
-
-## Code Implementation
-
-\`\`\`python
-import numpy as np
-import matplotlib.pyplot as plt
-
-def calculate_frequency_response(R, C, frequencies):
-    omega = 2 * np.pi * frequencies
-    s = 1j * omega
-    H = 1 / (1 + s * R * C)
-    return H
-
-# Circuit parameters
-R = 1000  # 1kΩ
-C = 100e-6  # 100µF
-
-# Frequency range
-f = np.logspace(0, 5, 1000)  # 1Hz to 100kHz
-H = calculate_frequency_response(R, C, f)
-
-# Plot results
-plt.figure(figsize=(10, 6))
-plt.subplot(2, 1, 1)
-plt.semilogx(f, 20*np.log10(np.abs(H)))
-plt.ylabel('Magnitude (dB)')
-plt.grid(True)
-
-plt.subplot(2, 1, 2)  
-plt.semilogx(f, np.angle(H)*180/np.pi)
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Phase (degrees)')
-plt.grid(True)
-plt.show()
-\`\`\`
-
-## Conclusions
-
-The analysis reveals several important characteristics:
-
-1. The circuit exhibits **low-pass filter** behavior
-2. The **3dB cutoff frequency** is approximately 1.59 kHz
-3. The **phase response** shows a gradual transition from 0° to -90°
-4. The circuit is **stable** with good phase margin
-
-### Recommendations
-
-Based on the analysis, the following recommendations are made:
-
-- Consider adding **temperature compensation** for improved stability
-- Implement **impedance matching** at the input and output
-- Add **protective circuitry** to prevent damage from overvoltage conditions
-- Use **precision components** for critical applications
-
-## Future Work
-
-Future enhancements could include:
-
-1. **Nonlinear analysis** for large signal conditions
-2. **Noise analysis** to determine SNR characteristics  
-3. **Monte Carlo simulation** for component tolerance effects
-4. **Thermal analysis** for power dissipation considerations
-
-## References
-
-1. Sedra, A. S., & Smith, K. C. (2020). *Microelectronic Circuits*. Oxford University Press.
-2. Gray, P. R., et al. (2009). *Analysis and Design of Analog Integrated Circuits*. Wiley.
-3. Razavi, B. (2016). *Design of Analog CMOS Integrated Circuits*. McGraw-Hill Education.
-
----
-
-*Report generated automatically by the PPP Circuit Analysis System*`;
-
-  // Use test data if no real report data is available
-  const finalReportData = reportData || testReportData;
-  
   const increaseZoom = () => setZoom(prev => Math.min(prev + 0.2, 3));
   const decreaseZoom = () => setZoom(prev => Math.max(prev - 0.2, 0.5));
 
   // Function to generate and download PDF from markdown report
   const handleDownloadPDF = () => {
-    if (!finalReportData) return;
+    if (!reportData) return;
     const element = reportHtmlRef.current;
     if (!element) return;
     
@@ -349,7 +229,7 @@ Future enhancements could include:
 
         {/* Report Tab Content */}
         <TabsContent value="report" className="flex-1 overflow-hidden flex flex-col">
-          {finalReportData ? (
+          {reportData ? (
             <div className="relative flex-1 p-3 sm:p-6">
               {/* Floating Toolbar */}
               <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 bg-slate-900/95 backdrop-blur-sm border border-electric-cyan rounded-lg shadow-lg p-2 sm:p-3">
@@ -379,7 +259,7 @@ Future enhancements could include:
                           remarkPlugins={[remarkGfm, remarkMath]}
                           rehypePlugins={[rehypeKatex]}
                         >
-                          {finalReportData}
+                          {reportData}
                         </ReactMarkdown>
                       </div>
                     </div>
@@ -465,7 +345,7 @@ Future enhancements could include:
                           ),
                         }}
                       >
-                        {finalReportData}
+                        {reportData}
                       </ReactMarkdown>
                     </div>
                   </div>
