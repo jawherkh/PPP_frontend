@@ -1,40 +1,50 @@
-
 import ChatSidebar from '@/components/ChatSidebar';
 import ChatInterface from '@/components/ChatInterface';
 import CircuitVisualization from '@/components/CircuitVisualization';
 import SettingsPanel from '@/components/SettingsPanel';
+import MobileTabBar from '@/components/MobileTabBar';
 import { ChatProvider, useChatContext } from '@/context/ChatContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useState } from 'react';
 
 const MainContent = () => {
   const { sidebarOpen } = useChatContext();
   const isMobile = useIsMobile();
-    if (isMobile) {
+  const [activeMobileTab, setActiveMobileTab] = useState<'chat' | 'circuit'>('chat');
+  
+  if (isMobile) {
     return (
       <div className="flex flex-col h-screen overflow-hidden bg-background">
-        {/* Mobile layout - single column with tabs */}
         <ChatSidebar />
         
         <main className="flex-1 overflow-hidden">
-          <ChatInterface />
+          {activeMobileTab === 'chat' ? (
+            <ChatInterface />
+          ) : (
+            <CircuitVisualization />
+          )}
         </main>
         
-        {/* TODO: Add mobile tabs for circuit view later */}
-        {/* <MobileTabBar activeTab={activeMobileTab} onTabChange={setActiveMobileTab} /> */}
+        <MobileTabBar 
+          activeTab={activeMobileTab} 
+          onTabChange={setActiveMobileTab} 
+        />
         
         <SettingsPanel />
       </div>
     );
   }
   
-  // Desktop layout
+  // Desktop and tablet layout
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <ChatSidebar />
       
-      <main className={`flex-1 flex transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
-        {/* Responsive grid layout for desktop/tablet */}
-        <div className="hidden lg:flex w-full">
+      <main className={`flex-1 flex transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'
+      }`}>
+        {/* Desktop layout - side by side */}
+        <div className="hidden xl:flex w-full">
           <div className="w-1/2 h-full border-r border-border">
             <ChatInterface />
           </div>
@@ -43,8 +53,8 @@ const MainContent = () => {
           </div>
         </div>
         
-        {/* Tablet layout - stacked */}
-        <div className="flex flex-col lg:hidden w-full">
+        {/* Tablet layout - stacked vertically */}
+        <div className="flex flex-col xl:hidden w-full">
           <div className="h-1/2 border-b border-border">
             <ChatInterface />
           </div>

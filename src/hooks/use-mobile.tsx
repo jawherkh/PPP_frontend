@@ -1,6 +1,6 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 768 // Changed back to 768 for better mobile detection
+const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
@@ -18,9 +18,9 @@ export function useIsMobile() {
   return !!isMobile
 }
 
-// Additional hook for more granular breakpoints
+// Enhanced hook for more granular breakpoints
 export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = React.useState<'mobile' | 'tablet' | 'desktop'>('desktop')
+  const [breakpoint, setBreakpoint] = React.useState<'mobile' | 'tablet' | 'desktop' | 'xl'>('desktop')
 
   React.useEffect(() => {
     const updateBreakpoint = () => {
@@ -29,8 +29,10 @@ export function useBreakpoint() {
         setBreakpoint('mobile')
       } else if (width < 1024) {
         setBreakpoint('tablet')
-      } else {
+      } else if (width < 1280) {
         setBreakpoint('desktop')
+      } else {
+        setBreakpoint('xl')
       }
     }
 
@@ -40,4 +42,21 @@ export function useBreakpoint() {
   }, [])
 
   return breakpoint
+}
+
+// Hook for checking specific breakpoints
+export function useMediaQuery(query: string) {
+  const [matches, setMatches] = React.useState<boolean>(false)
+
+  React.useEffect(() => {
+    const media = window.matchMedia(query)
+    if (media.matches !== matches) {
+      setMatches(media.matches)
+    }
+    const listener = () => setMatches(media.matches)
+    media.addEventListener('change', listener)
+    return () => media.removeEventListener('change', listener)
+  }, [matches, query])
+
+  return matches
 }

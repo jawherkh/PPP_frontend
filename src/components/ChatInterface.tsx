@@ -62,7 +62,9 @@ const ChatInterface: React.FC = () => {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [messages]);  // Handle message submission
+  }, [messages]);
+
+  // Handle message submission
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isProcessing) return;
 
@@ -189,6 +191,7 @@ const ChatInterface: React.FC = () => {
       }
     }
   };
+
   // Handle keyboard shortcut
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
@@ -196,44 +199,47 @@ const ChatInterface: React.FC = () => {
       handleSendMessage();
     }
   };
+
   return (
     <div className="flex flex-col h-full">
       {/* Mobile Header */}
       {isMobile && (
-        <div className="flex items-center justify-between p-4 border-b border-border lg:hidden">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border lg:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="text-foreground"
+            className="text-foreground h-8 w-8 sm:h-10 sm:w-10"
           >
-            <Menu size={20} />
+            <Menu size={18} className="sm:w-5 sm:h-5" />
             <span className="sr-only">Open menu</span>
           </Button>
           <div className="flex items-center gap-2">
-            <CircuitBoard className="h-5 w-5 text-electric-light" />
-            <span className="font-medium">Circuit Assistant</span>
+            <CircuitBoard className="h-4 w-4 sm:h-5 sm:w-5 text-electric-light" />
+            <span className="font-medium text-sm sm:text-base">Circuit Assistant</span>
           </div>
-          <div className="w-10" /> {/* Spacer for balance */}
+          <div className="w-8 sm:w-10" /> {/* Spacer for balance */}
         </div>
       )}
       
       {/* Chat Messages */}
-      <ScrollArea className="flex-1 p-4 overflow-auto" ref={scrollAreaRef}>
-        <div className="flex flex-col space-y-4 pb-4">
+      <ScrollArea className="flex-1 p-3 sm:p-4 overflow-auto" ref={scrollAreaRef}>
+        <div className="flex flex-col space-y-3 sm:space-y-4 pb-4">
           {messages.map((message) => (
             <MessageItem key={message.id} message={message} />
           ))}
         </div>
-      </ScrollArea>      {/* Input Area */}
-      <div className="border-t border-border bg-background p-4">
+      </ScrollArea>
+
+      {/* Input Area */}
+      <div className="border-t border-border bg-background p-3 sm:p-4">
         {/* Advanced Controls */}
         {showAdvancedControls && (
-          <div className="mb-4 p-3 bg-slate-900/50 border border-electric-cyan/30 rounded-lg">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-electric-light">Query Routing:</label>
+          <div className="mb-3 sm:mb-4 p-3 bg-slate-900/50 border border-electric-cyan/30 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <label className="text-sm font-medium text-electric-light whitespace-nowrap">Query Routing:</label>
               <Select value={routingMode} onValueChange={(value: 'auto' | 'simple' | 'classify' | 'full') => setRoutingMode(value)}>
-                <SelectTrigger className="w-40 bg-slate-800 border-electric-cyan/30 text-electric-light">
+                <SelectTrigger className="w-full sm:w-40 bg-slate-800 border-electric-cyan/30 text-electric-light">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-electric-cyan/30">
@@ -243,7 +249,7 @@ const ChatInterface: React.FC = () => {
                   <SelectItem value="full" className="text-electric-light">Full Analysis</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="text-xs text-slate-400 ml-2">
+              <div className="text-xs text-slate-400">
                 {routingMode === 'auto' && 'AI decides between simple response or full analysis'}
                 {routingMode === 'simple' && 'Fast responses for basic queries'}
                 {routingMode === 'classify' && 'Show query classification only'}
@@ -252,41 +258,42 @@ const ChatInterface: React.FC = () => {
             </div>
           </div>
         )}
+        
         <div className="flex items-end gap-2 relative circuit-border rounded-lg p-1 overflow-hidden">
           <div className="absolute left-0 top-0 h-1 w-full electric-gradient animate-flow"></div>
-            <Textarea
+          <Textarea
             ref={textareaRef}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isProcessing ? "Processing circuit design..." : "Ask about circuits, components, or analysis..."}
-            className="flex-1 min-h-[60px] bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none"
+            className="flex-1 min-h-[50px] sm:min-h-[60px] bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-sm sm:text-base"
             maxLength={1000}
             disabled={isProcessing}
           />
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              className="hover:bg-electric-cyan/20"
+              className="hover:bg-electric-cyan/20 h-8 w-8 sm:h-10 sm:w-10"
               onClick={() => setShowAdvancedControls(!showAdvancedControls)}
               title="Advanced routing controls"
             >
-              <Settings size={18} className={showAdvancedControls ? 'text-electric-cyan' : 'text-slate-400'} />
+              <Settings size={16} className={`sm:w-[18px] sm:h-[18px] ${showAdvancedControls ? 'text-electric-cyan' : 'text-slate-400'}`} />
             </Button>
             
             <Button
               type="button"
               size="icon"
-              className="bg-electric hover:bg-electric-accent"
+              className="bg-electric hover:bg-electric-accent h-8 w-8 sm:h-10 sm:w-10"
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isProcessing}
             >
               {isProcessing ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin sm:w-[18px] sm:h-[18px]" />
               ) : (
-                <ArrowUp size={18} />
+                <ArrowUp size={16} className="sm:w-[18px] sm:h-[18px]" />
               )}
               <span className="sr-only">
                 {isProcessing ? 'Processing...' : 'Send message'}
@@ -294,7 +301,8 @@ const ChatInterface: React.FC = () => {
             </Button>
           </div>
         </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+        
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground mt-2 gap-1">
           <div className="flex items-center gap-1">
             <Zap size={12} className="text-electric-light" />
             <span>Circuit analysis powered by AI</span>
